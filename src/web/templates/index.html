@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                任务状态
+                <button class="btn btn-primary btn-sm" onclick="refreshFiles()">
+                    <span id="refresh-icon" class="spinner-border spinner-border-sm d-none"></span>
+                    刷新文件列表
+                </button>
+            </div>
+            <div class="card-body" id="status-container">
+                <div class="progress mb-3">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <p>当前任务: <span id="current-task">-</span></p>
+                <p>进度: <span id="progress">0</span>%</p>
+                <p>总任务数: <span id="total-tasks">0</span></p>
+                <p>已完成: <span id="completed-tasks">0</span></p>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                统计信息
+            </div>
+            <div class="card-body" id="stats-container">
+                <p>总复制文件: <span id="total-copied">0</span></p>
+                <p>成功率: <span id="success-rate">0%</span></p>
+                <p>运行时间: <span id="running-time">-</span></p>
+                <p>错误次数: <span id="error-count">0</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                实时日志
+                <button class="btn btn-sm btn-secondary float-end" onclick="clearLogs()">
+                    清除日志
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="log-container" id="log-container">
+                    <div>加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const updateLogs = async () => {
+    try {
+        const response = await axios.get('/api/logs');
+        const logContainer = document.getElementById('log-container');
+        logContainer.innerHTML = response.data.logs.join('<br>');
+        logContainer.scrollTop = logContainer.scrollHeight;
+    } catch (error) {
+        console.error('Error fetching logs:', error);
+    }
+};
+
+const updateStatus = async () => {
+    try {
+        const response = await axios.get('/api/status');
+        const statusContainer = document.getElementById('status-container');
+        const status = response.data;
+        
+        statusContainer.innerHTML = `
+            <div class="progress mb-3">
+                <div class="progress-bar" role="progressbar" style="width: ${status.progress}%"></div>
+            </div>
+            <p>当前任务: ${status.current_task || 'N/A'}</p>
+            <p>进度: ${status.progress || '0'}%</p>
+            <p>总任务数: ${status.total_tasks || '0'}</p>
+            <p>已完成: ${status.completed_tasks || '0'}</p>
+        `;
+    } catch (error) {
+        console.error('Error fetching status:', error);
+    }
+};
+
+const refreshFiles = async () => {
+    const button = document.querySelector('button');
+    const spinner = document.getElementById('refresh-icon');
+    try {
+        button.disabled = true;
+        spinner.classList.remove('d-none');
+        
+        const response = await axios.post('/api/refresh');
+        if (response.data.success) {
+            alert(response.data.message);
+        } else {
+            alert('刷新失败: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error refreshing files:', error);
+        alert('刷新失败: ' + error.message);
+    } finally {
+        button.disabled = false;
+        spinner.classList.add('d-none');
+    }
+};
+
+const clearLogs = async () => {
+    try {
+        const response = await axios.post('/api/clear-logs');
+        if (response.data.success) {
+            alert(response.data.message);
+        } else {
+            alert('清除日志失败: ' + response.data.message);
+        }
+    } catch (error) {
+        console.error('Error clearing logs:', error);
+        alert('清除日志失败: ' + error.message);
+    }
+};
+
+// 定期更新
+setInterval(updateLogs, 5000);
+setInterval(updateStatus, 5000);
+
+// 初始加载
+updateLogs();
+updateStatus();
+</script>
+{% endblock %} 
