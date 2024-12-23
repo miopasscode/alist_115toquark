@@ -27,7 +27,7 @@ class AListCopyService:
             config_file: 配置文件路径
         """
         self.config = self.load_config(config_file)
-        self.logger = setup_logger(self.config['log']['file'])
+        self.logger = setup_logger(os.path.dirname(self.config['log']['file']))
         self.alist = None
         self.cache = None
         self.web_thread = None
@@ -50,8 +50,8 @@ class AListCopyService:
         """初始化服务组件"""
         try:
             # 确保目录存在
-            os.makedirs(self.config['paths']['cache_dir'], exist_ok=True)
-            os.makedirs(self.config['paths']['log_dir'], exist_ok=True)
+            os.makedirs('cache/file_lists', exist_ok=True)
+            os.makedirs(os.path.dirname(self.config['log']['file']), exist_ok=True)
             
             # 初始化 API 客户端
             self.alist = AListAPI(
@@ -70,7 +70,7 @@ class AListCopyService:
                 
             # 初始化缓存
             self.cache = FileCache(
-                self.config['paths']['cache_dir'],
+                'cache/file_lists',
                 self.alist,
                 self.config
             )
@@ -98,8 +98,8 @@ class AListCopyService:
     def _run_web_server(self, refresh_callback):
         """Web 服务器运行函数"""
         app = create_app(
-            self.config['paths']['log_dir'],
-            self.config['paths']['cache_dir'],
+            os.path.dirname(self.config['log']['file']),
+            'cache/file_lists',
             refresh_callback
         )
         app.run(
@@ -113,13 +113,13 @@ class AListCopyService:
             logger.info("开始刷新文件列表...")
             
             # 获取源文件夹列表
-            src_files = self.alist.get_file_list(self.config['paths']['src_folder'])
+            src_files = self.alist.get_file_list(self.config['sync']['source'])
             if not src_files:
                 logger.error("获取源文件列表失败")
                 return False
                 
             # 获取目标文件夹列表
-            dst_files = self.alist.get_file_list(self.config['paths']['dst_folder'])
+            dst_files = self.alist.get_file_list(self.config['sync']['target'])
             if not dst_files:
                 logger.error("获取目标文件列表失败")
                 return False
@@ -152,7 +152,7 @@ class AListCopyService:
             List[str]: 处理后的文件列表
         """
         renamed_files = []
-        src_dir = self.config['paths']['src_folder']
+        src_dir = self.config['sync']['source']
         rename_count = 0
         total_files = len(pending_files)
         
@@ -196,7 +196,7 @@ class AListCopyService:
         if rename_count > 0:
             logger.info(f"重命名完成，共处理 {rename_count} 个文件")
             # 刷新源文件列表缓存
-            src_files = self.alist.get_file_list(self.config['paths']['src_folder'])
+            src_files = self.alist.get_file_list(self.config['sync']['source'])
             if src_files:
                 self.cache.save_file_list(src_files, is_source=True)
                 logger.info("已更新源文件列表缓存")
@@ -311,14 +311,14 @@ class AListCopyService:
                         # 创建复制任务
                         task_ids = self.alist.copy_files(
                             pending_files[:3],  # 每次最多处理3个
-                            self.config['paths']['src_folder'],
-                            self.config['paths']['dst_folder'],
+                            self.config['sync']['source'],
+                            self.config['sync']['target'],
                             self.config['task']['max_concurrent_tasks']
                         )
                         
                         if task_ids:  # 有新任务创建成功
                             # 更新夸克网盘缓存
-                            dst_files = self.alist.get_file_list(self.config['paths']['dst_folder'])
+                            dst_files = self.alist.get_file_list(self.config['sync']['target'])
                             if dst_files:
                                 self.cache.save_file_list(dst_files, is_source=False)
                                 logger.info("已更新夸克网盘缓存")
@@ -377,7 +377,7 @@ class AListCopyService:
                 }
             }
             
-            status_file = os.path.join(self.config['paths']['cache_dir'], "task_status.json")
+            status_file = os.path.join('cache/file_lists', "task_status.json")
             with open(status_file, 'w', encoding='utf-8') as f:
                 json.dump(status, f, ensure_ascii=False, indent=2)
         except Exception as e:
