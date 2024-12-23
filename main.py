@@ -104,7 +104,8 @@ class AListCopyService:
         )
         app.run(
             host=self.config['web']['host'],
-            port=self.config['web']['port']
+            port=self.config['web']['port'],
+            debug=False
         )
         
     def refresh_file_lists(self) -> bool:

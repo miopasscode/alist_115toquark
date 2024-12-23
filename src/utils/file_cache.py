@@ -71,47 +71,30 @@ class FileCache:
             json.dump(file_list, f, ensure_ascii=False, indent=2)
     
     def get_new_files(self) -> List[str]:
-        """获取需要复制的新文件列表"""
+        """获取新文件列表"""
         try:
             # 读取源文件列表 (115网盘)
             with open(self.src_cache_file, 'r', encoding='utf-8') as f:
                 src_data = json.load(f)
             
-            # 读取目标缓存文件列表 (夸克网盘缓存)
+            # 读取目标缓存文件列表 (夸克网盘)
             with open(self.dst_cache_file, 'r', encoding='utf-8') as f:
-                dst_cache_data = json.load(f)
+                dst_data = json.load(f)
             
-            # 获取源文件夹名称集合
-            src_folders = {
-                item["name"] 
-                for item in src_data.get("data", {}).get("content", [])
-                if item.get("is_dir")
-            }
+            # 比较文件列表
+            new_files = []
+            src_content = src_data.get("data", {}).get("content", [])
+            dst_content = dst_data.get("data", {}).get("content", [])
             
-            # 获取目标缓存中的文件夹名称集合
-            dst_cache_folders = {
-                item["name"] 
-                for item in dst_cache_data.get("data", {}).get("content", [])
-                if item.get("is_dir")
-            }
+            # 创建目标文件名集合
+            dst_names = {item["name"] for item in dst_content}
             
-            # 获取目标实时文件列表 (夸克网盘实时)
-            dst_files = self.alist.get_file_list(self.config['paths']['dst_folder'])
-            if dst_files:
-                dst_real_folders = {
-                    item["name"] 
-                    for item in dst_files.get("data", {}).get("content", [])
-                    if item.get("is_dir")
-                }
-            else:
-                dst_real_folders = set()
+            # 检查源文件是否在目标中存在
+            for item in src_content:
+                if item["name"] not in dst_names:
+                    new_files.append(item["name"])
             
-            # 合并目标文件夹集合（缓存 + 实时）
-            dst_folders = dst_cache_folders | dst_real_folders
-            
-            # 返回需要复制的文件列表（在源中有但目标中没有的文件）
-            new_files = src_folders - dst_folders
-            return sorted(list(new_files))
+            return new_files
             
         except Exception as e:
             logger.error(f"获取新文件列表失败: {e}")
