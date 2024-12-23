@@ -6,9 +6,11 @@
         "password": "your-password",
         "use_https": false
     },
-    "paths": {
-        "log_dir": "logs",
-        "cache_dir": "cache/file_lists"
+    "log": {
+        "level": "INFO",
+        "file": "logs/app.log",
+        "max_size": 10,
+        "backup_count": 5
     },
     "sync": {
         "source": "/115",
