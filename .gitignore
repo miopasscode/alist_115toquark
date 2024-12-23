@@ -12,9 +12,18 @@ cache/
 nohup.out
 
 # 配置文件
-config/*.json
-!config/config.example.json
+config/config.json
+config/config.example copy.json
 
 # IDE
 .vscode/
 .idea/
+
+# 运行时文件
+.pid
+*.pid
+
+# 临时文件
+*.tmp
+*.temp
+*.swp

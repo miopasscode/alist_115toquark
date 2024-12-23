@@ -1,0 +1,37 @@
+{
+    "alist": {
+        "host": "localhost",
+        "port": 5244,
+        "username": "admin",
+        "password": "your-password",
+        "use_https": false
+    },
+    "sync": {
+        "source": "/115",
+        "target": "/quark",
+        "exclude": [
+            "tmp",
+            "*.tmp"
+        ],
+        "interval": 3600,
+        "concurrent": 3,
+        "retry_times": 3,
+        "retry_interval": 300
+    },
+    "web": {
+        "host": "0.0.0.0",
+        "port": 62333,
+        "secret_key": "your-key"
+    },
+    "task": {
+        "check_interval": 60,
+        "max_check_time": 3600,
+        "max_concurrent_tasks": 3
+    },
+    "log": {
+        "level": "INFO",
+        "file": "logs/app.log",
+        "max_size": 10,
+        "backup_count": 5
+    }
+}
